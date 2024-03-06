@@ -1,0 +1,77 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .container {
+    display: flex;
+    height: 100vh;
+  }
+  
+  .channel {
+    color: white;
+  }
+
+  .channels_column {
+    width: 600px;
+    background-color: #3f0e40;
+    color: #fff;
+    padding: 20px;
+    overflow-y: auto;
+  }
+  
+  .messages_column {
+    background-color: #fff;
+    padding: 20px;
+    flex-grow: 1;
+    overflow-y: auto;
+  }
+  
+  .replies_column {
+    background-color: #f8f8f8;
+    padding: 20px;
+    overflow-y: auto;
+  }
+  
+  .messages, .thread-messages {
+    margin-top: 20px;
+  }
+  
+  .message {
+    margin-bottom: 10px;
+  }
+  
+  .user {
+    font-weight: bold;
+    margin-right: 5px;
+  }
+
+  .to_profile {
+    color: goldenrod;
+  }
+  .to_channelist, .to_messages {
+    color: #3f0e40;
+  }
+
+  .new_message, .new_reply {
+    display: flex;
+    margin-top: 20px;
+  }
+  
+  .new_message input, .new_reply input {
+    width: 300px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .new_message button, .new_reply button {
+    margin-left: 10px;
+    padding: 10px 20px;
+    background-color: #3f0e40;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
