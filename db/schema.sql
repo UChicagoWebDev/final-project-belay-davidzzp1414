@@ -30,3 +30,12 @@ create table users_messages (
     FOREIGN KEY(channel_id) REFERENCES channels(id),
     FOREIGN KEY(message_id) REFERENCES messages(id)
 );
+
+create table emojis (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER,
+    message_id INTEGER,
+    emoji varchar(10),
+    FOREIGN KEY(user_id) REFERENCES users(id),
+    FOREIGN KEY(message_id) REFERENCES messages(id)
+);

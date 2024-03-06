@@ -6,8 +6,8 @@
     davidzhang_user_id = '';
     davidzhang_api_key = '';
     {% if user %}
-    davidzhang_user_id = {{ user.id }};
-    davidzhang_api_key = '{{ user.api_key }}';
+        davidzhang_user_id = {{ user.id }};
+        davidzhang_api_key = '{{ user.api_key }}';
     {% endif %}
   </script>
 </head>
@@ -38,11 +38,11 @@
         <div class="clip">
           <div class="auth container">
             <div class="alignedForm login">
-              <label for="username">{{user.name}}</label>
+              <label for="username">New Username</label>
               <input name="username" id="profile_username"></input>
               <button id="profile_update_button">Update</button>
               <br>
-              <label for="password">{{user.password}}</label>
+              <label for="password">New Password</label>
               <input type="password" id="profile_password" name="password">
             </div>
             <h3><a href="../">Back to home</a></h3>
@@ -55,6 +55,7 @@
     <div class="container" id="application">
         <div class="channels_column" id="channels_column">
         <h3><a class="to_profile" href="/profile">Profile</a></h3>
+        <button id="logout_button">Logout</button>
         <br>
         <h3>Channels</h3>
         <div class="channelsList" id="channelsList">
@@ -73,14 +74,6 @@
         </div>
         <br><br>
         <div class="messages">
-            <div class="message">
-            <span class="user">Alice</span>
-            <span class="body">Hello, team! Let's discuss our plans for the upcoming project.</span>
-            </div>
-            <div class="message">
-            <span class="user">Bob</span>
-            <span class="body">Sounds good! What's the timeline we're looking at?</span>
-            </div>
         </div>
         </div>
         <div class="messages_none" id="messages_none">
@@ -99,14 +92,6 @@
         </div>
         <br><br>
         <div class="thread-messages">
-            <div class="message">
-                <span class="user">Sample User 1</span>
-                <span class="body">Sample Reply 1.</span>
-            </div>
-            <div class="message">
-                <span class="user">Sample User 2</span>
-                <span class="body">Sample Reply 2.</span>
-            </div>
         </div>
         </div>
     </div>

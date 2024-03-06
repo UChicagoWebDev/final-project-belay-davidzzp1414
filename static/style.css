@@ -10,6 +10,9 @@ body {
   }
   
   .channel {
+    color: gray;
+  }
+  .channel:hover {
     color: white;
   }
 
@@ -19,6 +22,7 @@ body {
     color: #fff;
     padding: 20px;
     overflow-y: auto;
+    width: calc(100vw / 3);
   }
   
   .messages_column {
@@ -26,12 +30,14 @@ body {
     padding: 20px;
     flex-grow: 1;
     overflow-y: auto;
+    width: calc(100vw / 3);
   }
   
   .replies_column {
     background-color: #f8f8f8;
     padding: 20px;
     overflow-y: auto;
+    width: calc(100vw / 4);
   }
   
   .messages, .thread-messages {
@@ -47,7 +53,7 @@ body {
     margin-right: 5px;
   }
 
-  .to_profile {
+  .to_profile, .logout {
     color: goldenrod;
   }
   .to_channelist, .to_messages {
@@ -75,3 +81,9 @@ body {
     border-radius: 4px;
     cursor: pointer;
   }
+
+@media (max-width: 1000px) {
+    .channels_column, .messages_column, .replies_column {
+        width: 100vw;
+    }
+}

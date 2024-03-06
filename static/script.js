@@ -1,7 +1,8 @@
 path_list = new URL(window.location.href).pathname.split('/');
-messages_interval = 250;
+messages_interval = 500;
 channels_interval = 500;
 window_width_cutoff = 1000;
+
 
 function show_page(page) {
     console.log(console.log('show'.concat(' ', page)));
@@ -62,6 +63,22 @@ function signup() {
         console.error(error);
     });
 }
+function logout() {
+    fetch(`/api/logout`, {
+        method: 'GET',
+        headers: {
+            'x-api-key': davidzhang_api_key,
+            "Content-Type": "application/json"
+        }
+    })
+    .then(response => response.json())
+    .then(result => {
+        location.reload();
+    })
+    .catch(error => {
+        console.error(error);
+    });
+}
 window.addEventListener('load', function() {
     if ((new URL(window.location.href).pathname.split('/')[1]).localeCompare('login') == 0) {
         show_page('login');
@@ -77,6 +94,9 @@ document.querySelector("#login_button").addEventListener('click', function() {
 });
 document.querySelector("#signup_button").addEventListener('click', function() {
     signup();
+});
+document.querySelector("#logout_button").addEventListener('click', (e) => {
+    logout();
 });
 
 
@@ -136,6 +156,10 @@ function getChannelsList() {
     .catch(error => console.error('Error:', error));
 }
 function displayChannelsList(channels) {
+    var channelId = null;
+    if (path_list[1] == 'channel') {
+        channelId = path_list[2];
+    }
     const messagesContainer = document.querySelector('.channelsList');
     messagesContainer.innerHTML = '';
     if (typeof channels === 'string' || channels instanceof String) {
@@ -144,12 +168,19 @@ function displayChannelsList(channels) {
     } else {
         channels.forEach(channel => {
             const channelElement = document.createElement('a');
-            channelElement.setAttribute('class', `channel`)
+            channelElement.setAttribute('class', 'channel');
             channelElement.setAttribute('href', `/channel/${channel.id}`);
+            if (channelId == channel.id) {
+                channelElement.setAttribute('style', 'color: white');
+            }
             if (channel.unread > 0) {
                 channelElement.innerHTML = `# <strong>${channel.name} (${channel.unread})</strong><br><br>`;
             } else {
-                channelElement.innerHTML = `# ${channel.name}<br><br>`;
+                if (channelId == channel.id) {
+                    channelElement.innerHTML = `<strong># ${channel.name}</strong><br><br>`;
+                } else {
+                    channelElement.innerHTML = `# ${channel.name}<br><br>`;
+                }
             }
             messagesContainer.appendChild(channelElement);
         })
@@ -178,6 +209,20 @@ window.addEventListener('load', function() {
         }
     }
 });
+
+function postEmoji(messageId, emojiCode) {
+    console.log('post reaction');
+    const data = {emoji_code: emojiCode}
+    fetch(`/api/post_emoji/${messageId}`, {
+        method: 'POST',
+        headers: {
+            'x-api-key': davidzhang_api_key,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    })
+    .catch(error => console.error('Error:', error));
+}
 
 
 
@@ -209,31 +254,82 @@ function getMessages() {
     })
     .then(response => response.json())
     .then(messages => {
-        displayMessages(messages);
+        displayMessages(messages, 'messages');
     })
     .catch(error => console.error('Error:', error));
 }
-function displayMessages(messages) {
-    const messagesContainer = document.querySelector('.messages');
+function displayMessages(messages, section) {
+    const messagesContainer = document.querySelector(`.${section}`);
     messagesContainer.innerHTML = '';
     if (typeof messages === 'string' || messages instanceof String) {
-        messagesContainer.innerHTML = 'No message in this channel yet';
+        if (section == 'messages') {
+            messagesContainer.innerHTML = 'No message in this channel yet';
+        } else {
+            messagesContainer.innerHTML = 'No replies to this message yet';
+        }
     } else {
         messages.forEach(message => {
             const messageElement = document.createElement('message');
-            messageElement.innerHTML = `
-                <span class="user">${message.user_name}</span>
-                <span class="body">${message.body}</span>
-                <br>
-            `;
-            const reply = document.createElement('replies');
-            if (message.replies > 0) {
-                reply.innerHTML = `<span class="reply"><a href="/channel/${message.channel_id}/thread/${message.id}">Reply (${message.replies})</a></span><br><br>`;
+            if (section != 'reply_message') {
+                messageElement.innerHTML = `
+                    <div class="user">${message.user_name}</div>
+                    <div class="body" id="textArea_${message.id}">${message.body}</div>
+                    <br>
+                    <div id="imagesArea_${message.id}_${section}"></div>
+                    <div id="emoji_box_${message.id}_${section}" class="emoji-picker">
+                        <button id="emoji-${message.id}-1_${section}" class="emoji">&#x1F600; ${message.e1} <a id="${message.id}-1_${section}">${message.reacters1}</a></span>
+                        <button id="emoji-${message.id}-2_${section}" class="emoji">&#x1F601; ${message.e2} <a id="${message.id}-2_${section}">${message.reacters2}</a></span>
+                        <button id="emoji-${message.id}-3_${section}" class="emoji">&#x1F602; ${message.e3} <a id="${message.id}-3_${section}">${message.reacters3}</a></span>
+                    </div>
+                    <br>`;
             } else {
-                reply.innerHTML = `<span class="reply"><a href="/channel/${message.channel_id}/thread/${message.id}">Reply</a></span><br><br>`;
+                messageElement.innerHTML = `
+                    <div class="user">${message.user_name}</div>
+                    <div class="body" id="textArea_${message.id}">${message.body}</div>
+                    <br><br>`;
             }
-            messageElement.appendChild(reply);
             messagesContainer.appendChild(messageElement);
+            
+            if (section != 'reply_message') {
+                const reply = document.createElement('replies');
+                if (message.replies > 0) {
+                    reply.innerHTML = `<span class="reply"><a href="/channel/${message.channel_id}/thread/${message.id}">Reply (${message.replies})</a></span><br><br>`;
+                } else {
+                    reply.innerHTML = `<span class="reply"><a href="/channel/${message.channel_id}/thread/${message.id}">Reply</a></span><br><br>`;
+                }
+                messageElement.appendChild(reply);
+                const imagesContainer = document.getElementById(`imagesArea_${message.id}_${section}`);
+                const urls = message.body.split(/\s+/).filter(text => text.startsWith('http'));
+                urls.forEach(url => {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.style.maxWidth = '150px'; // Set max width to keep images small
+                    img.style.margin = '5px'; // Add some space between images
+                    imagesContainer.appendChild(img);
+                });
+
+                document.querySelector(`#emoji-${message.id}-1_${section}`).addEventListener('click', (e) => {
+                    postEmoji(message.id, '&#x1F600;');
+                });
+                document.querySelector(`#emoji-${message.id}-2_${section}`).addEventListener('click', (e) => {
+                    postEmoji(message.id, '&#x1F601;');
+                });
+                document.querySelector(`#emoji-${message.id}-3_${section}`).addEventListener('click', (e) => {
+                    postEmoji(message.id, '&#x1F602;');
+                });
+                hide_page(`${message.id}-1_${section}`);
+                document.querySelector(`#emoji-${message.id}-1_${section}`).addEventListener('mouseover', (e) => {
+                    show_page(`${message.id}-1_${section}`);
+                });
+                hide_page(`${message.id}-2_${section}`);
+                document.querySelector(`#emoji-${message.id}-2_${section}`).addEventListener('mouseover', (e) => {
+                    show_page(`${message.id}-2_${section}`);
+                });
+                hide_page(`${message.id}-3_${section}`);
+                document.querySelector(`#emoji-${message.id}-3_${section}`).addEventListener('mouseover', (e) => {
+                    show_page(`${message.id}-3_${section}`);
+                });
+            }
         })
     }
 }
@@ -265,12 +361,10 @@ window.addEventListener('load', function() {
     }
 });
 
-if (((new URL(window.location.href).pathname.split('/')[1]).localeCompare('channel') == 0)||
-    ((new URL(window.location.href).pathname.split('/')[1]).localeCompare('thread') == 0)) {
+if ((new URL(window.location.href).pathname.split('/')[1]).localeCompare('channel') == 0) {
     setInterval(getMessages, messages_interval);
 }
-if (((new URL(window.location.href).pathname.split('/')[1]).localeCompare('login') != 0)&&
-    ((new URL(window.location.href).pathname.split('/')[1]).localeCompare('profile') != 0)) {
+if ((new URL(window.location.href).pathname.split('/')[1]).localeCompare('channel') == 0) {
     setInterval(getChannelsList, channels_interval);
 }
 
@@ -303,7 +397,7 @@ document.querySelector("#post_button").addEventListener('click', function() {
 
 // thread selected
 function getReplies() {
-    console.log('getReplies');
+    //console.log('getReplies');
     const channelId = new URL(window.location.href).pathname.split('/')[2];
     const threadId = new URL(window.location.href).pathname.split('/')[4];
     fetch(`/api/get_message/${threadId}`, {
@@ -315,11 +409,7 @@ function getReplies() {
     })
     .then(response => response.json())
     .then(message => {
-        const messagesContainer = document.querySelector('.reply_message');
-        messagesContainer.innerHTML = `
-        <span class="user">${message.name}</span>
-        <span class="body">${message.body}</span>
-        `
+        displayMessages(message, 'reply_message');
     })
     .catch(error => console.error('Error:', error));
 
@@ -332,7 +422,7 @@ function getReplies() {
     })
     .then(response => response.json())
     .then(replies => {
-        displayReplies(replies);
+        displayMessages(replies, 'thread-messages');
     })
     .catch(error => console.error('Error:', error));
 }
@@ -350,7 +440,6 @@ function displayReplies(replies) {
                 <br><br>
             `;
             repliesContainer.appendChild(messageElement);
-            const message = reply.message;
         })
     }
 }

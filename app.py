@@ -109,9 +109,11 @@ def render_thread(channel_id, thread_id):
 def page_not_found(e):
     return app.send_static_file('404.html'), 404
 
+
 ########  API  ########
-def verify_api(request, user):
+def verify_api(request):
     try:
+        user = get_user_from_cookie(request)
         key = request.headers.get('x-api-key')
         db_key = query_db("select api_key from users where id = ?",
                         [user['id']], one=True)['api_key']
@@ -145,9 +147,8 @@ where messages.channel_id = ? and messages.id > ?
 
 @app.route('/api/get_channels_list', methods=['GET'])
 def get_channels_list():
-    user = get_user_from_cookie(request)
-    if verify_api(request, user) is not True:
-        return verify_api(request, user)
+    if verify_api(request) is not True:
+        return verify_api(request)
     channels = query_db('''
 select id, name from channels
                         ''')
@@ -159,9 +160,8 @@ select id, name from channels
 
 @app.route('/api/get_channel_name/<int:channel_id>', methods=['GET'])
 def get_channel_name(channel_id):
-    user = get_user_from_cookie(request)
-    if verify_api(request, user) is not True:
-        return verify_api(request, user)
+    if verify_api(request) is not True:
+        return verify_api(request)
     result = query_db('''
 select name from channels
 where id = ?
@@ -180,13 +180,58 @@ select distinct(id) from messages where reply_to = ?
     else:
         return len(replies)
 
+def e_cnt(msg):
+    emojis = [0, 0, 0]
+    e1 = query_db('''
+select * from emojis where message_id = ? and emoji = "&#x1F600;"
+                  ''', [msg['message_id']])
+    if e1:
+        emojis[0] = len(e1)
+    e2 = query_db('''
+select * from emojis where message_id = ? and emoji = "&#x1F601;"
+                  ''', [msg['message_id']])
+    if e2:
+        emojis[1] = len(e2)
+    e3 = query_db('''
+select * from emojis where message_id = ? and emoji = "&#x1F602;"
+                  ''', [msg['message_id']])
+    if e3:
+        emojis[2] = len(e3)
+    return emojis
+
+def rs(msg):
+    reacters = ['', '', '']
+    r1 = query_db('''
+select users.name as name from emojis
+inner join users on emojis.user_id = users.id
+where emojis.message_id = ? and emoji = "&#x1F600;"
+                  ''', [msg['message_id']])
+    if r1:
+        reacters[0] = ', '.join([r['name'] for r in r1])
+    r2 = query_db('''
+select users.name as name from emojis
+inner join users on emojis.user_id = users.id
+where message_id = ? and emoji = "&#x1F601;"
+                  ''', [msg['message_id']])
+    if r2:
+        reacters[1] = ', '.join([r['name'] for r in r2])
+    r3 = query_db('''
+select users.name as name from emojis
+inner join users on emojis.user_id = users.id
+where message_id = ? and emoji = "&#x1F602;"
+                  ''', [msg['message_id']])
+    if r3:
+        reacters[2] = ', '.join([r['name'] for r in r3])
+    return reacters
+
 @app.route('/api/get_messages/<int:channel_id>', methods=['GET'])
 def get_messages(channel_id):
     user = get_user_from_cookie(request)
-    if verify_api(request, user) is not True:
-        return verify_api(request, user)
+    if verify_api(request) is not True:
+        return verify_api(request)
     result = query_db('''
-select users.name as user_name, body, messages.id as message_id from messages
+select users.name as user_name, body, messages.id as message_id
+from messages
 inner join users on messages.user_id = users.id
 where messages.channel_id = ? and reply_to is null
                         ''', [channel_id])
@@ -210,45 +255,49 @@ where user_id = ? and channel_id = ?
                 query_db('''
 insert into users_messages (user_id, message_id, channel_id) values (?, ?, ?)
                         ''', [user['id'], last_message['id'], channel_id])
-        return jsonify([{'id': msg['message_id'], 'user_name': msg['user_name'], 'body': msg['body'], 'replies': get_reply_count(msg), 'channel_id': channel_id}
+        return jsonify([{'id': msg['message_id'], 'user_name': msg['user_name'], 'body': msg['body'], 'replies': get_reply_count(msg), 'channel_id': channel_id,
+                         'e1': e_cnt(msg)[0], 'e2': e_cnt(msg)[1], 'e3': e_cnt(msg)[2], 'reacters1': rs(msg)[0], 'reacters2': rs(msg)[1], 'reacters3': rs(msg)[2]}
                         for msg in result])
 
 @app.route('/api/get_message/<int:thread_id>', methods=['GET'])
 def get_message(thread_id):
-    user = get_user_from_cookie(request)
-    if verify_api(request, user) is not True:
-        return verify_api(request, user)
-    query = '''
-select users.name as name, body from messages
+    if verify_api(request) is not True:
+        return verify_api(request)
+    result = query_db('''
+select users.name as user_name, body, messages.id as message_id
+from messages
 inner join users on messages.user_id = users.id
 where messages.id = ?
-            '''
-    msg = query_db(query, [thread_id], one=True)
-    return jsonify({'name': msg['name'], 'body': msg['body']})
+                        ''', [thread_id])
+    if result is None:
+        return jsonify('No messages yet')
+    else:
+        return jsonify([{'id': msg['message_id'], 'user_name': msg['user_name'], 'body': msg['body'], 'replies': get_reply_count(msg),
+                         'e1': e_cnt(msg)[0], 'e2': e_cnt(msg)[1], 'e3': e_cnt(msg)[2], 'reacters1': rs(msg)[0], 'reacters2': rs(msg)[1], 'reacters3': rs(msg)[2]}
+                        for msg in result])
 
 @app.route('/api/get_replies/<int:channel_id>/<int:thread_id>', methods=['GET'])
 def get_replies(channel_id, thread_id):
-    user = get_user_from_cookie(request)
-    if verify_api(request, user) is not True:
-        return verify_api(request, user)
-
-    query = '''
-select users.name as name, body from messages
+    if verify_api(request) is not True:
+        return verify_api(request)
+    result = query_db('''
+select users.name as user_name, body, messages.id as message_id
+from messages
 inner join users on messages.user_id = users.id
-where reply_to = ?
-            '''
-    replies = query_db(query, [thread_id])
-    if replies is None:
-        return jsonify('No replies yet')
+where messages.channel_id = ? and reply_to = ?
+                        ''', [channel_id, thread_id])
+    if result is None:
+        return jsonify('No messages yet')
     else:
-        return jsonify([{'user_name': reply['name'], 'body': reply['body']}
-                        for reply in replies])
+        return jsonify([{'id': msg['message_id'], 'user_name': msg['user_name'], 'body': msg['body'], 'replies': get_reply_count(msg), 'channel_id': channel_id,
+                         'e1': e_cnt(msg)[0], 'e2': e_cnt(msg)[1], 'e3': e_cnt(msg)[2], 'reacters1': rs(msg)[0], 'reacters2': rs(msg)[1], 'reacters3': rs(msg)[2]}
+                        for msg in result])
 
 @app.route('/api/post_reply/<int:channel_id>/<int:thread_id>', methods=['POST'])
 def post_reply(channel_id, thread_id):
     user = get_user_from_cookie(request)
-    if verify_api(request, user) is not True:
-        return verify_api(request, user)
+    if verify_api(request) is not True:
+        return verify_api(request)
 
     user_id = user['id']
     reply = request.json.get('reply')
@@ -264,8 +313,8 @@ insert into messages (user_id, channel_id, reply_to, body) values (?, ?, ?, ?)
 @app.route('/api/post_message/<int:channel_id>', methods=['POST'])
 def post_message(channel_id):
     user = get_user_from_cookie(request)
-    if verify_api(request, user) is not True:
-        return verify_api(request, user)
+    if verify_api(request) is not True:
+        return verify_api(request)
 
     user_id = user['id']
     message = request.json.get('message')
@@ -279,11 +328,33 @@ insert into messages (user_id, channel_id, reply_to, body) values (?, ?, null, ?
     print('new message inserted to DB')
     return jsonify({'success': True})
 
+@app.route('/api/post_emoji/<int:message_id>', methods=['POST'])
+def post_emoji(message_id):
+    user = get_user_from_cookie(request)
+    if verify_api(request) is not True:
+        return verify_api(request)
+    
+    user_id = user['id']
+    emoji_code = request.json.get('emoji_code')
+    if query_db('''
+select * from emojis
+where user_id=? and message_id=? and emoji=?
+                ''', [user_id, message_id, emoji_code]) is not None: # already posted emoji
+        query_db('''
+delete from emojis
+where user_id=? and message_id=? and emoji=?
+                 ''', [user_id, message_id, emoji_code]) # delete reaction
+    else:
+        query_db('''
+insert into emojis (user_id, message_id, emoji)
+values (?, ?, ?)
+                 ''', [user_id, message_id, emoji_code]) # add reaction
+    return jsonify({'success': True})
+
 @app.route('/api/login', methods=['GET'])
 def login():
     name = request.headers.get('username')
     password = request.headers.get('password')
-    print(name, password)
 
     query = """
 select id from users where name = ? and password = ?
@@ -307,7 +378,6 @@ select id from users where name = ? and password = ?
 def signup():
     name = request.json.get('username')
     password = request.json.get('password')
-    print(name, password)
     try:
         user = new_user(name, password)
         next_page = session.pop('next', None)
@@ -325,8 +395,8 @@ def signup():
 @app.route('/api/profile', methods=['POST'])
 def update_profile():
     user = get_user_from_cookie(request)
-    if verify_api(request, user) is not True:
-        return verify_api(request, user)
+    if verify_api(request) is not True:
+        return verify_api(request)
     
     user_id = user['id']
     new_name = request.headers.get('username')
@@ -345,6 +415,16 @@ def update_profile():
         resp = make_response(jsonify({'redirectUrl': url_for('render_profile')}))
         resp.set_cookie('davidzhang_user_password', str(new_password))
         return resp
+
+@app.route('/api/logout', methods=['GET'])
+def logout():
+    if verify_api(request) is not True:
+        return verify_api(request)
+    
+    resp = make_response(jsonify({'redirectUrl': url_for('render_login')}))
+    resp.set_cookie('davidzhang_user_id', '')
+    resp.set_cookie('davidzhang_user_password', '')
+    return resp
 
 
 if __name__ == '__main__':
