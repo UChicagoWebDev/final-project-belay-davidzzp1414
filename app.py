@@ -147,6 +147,7 @@ where messages.channel_id = ? and messages.id > ?
 
 @app.route('/api/get_channels_list', methods=['GET'])
 def get_channels_list():
+    user = get_user_from_cookie(request)
     if verify_api(request) is not True:
         return verify_api(request)
     channels = query_db('''

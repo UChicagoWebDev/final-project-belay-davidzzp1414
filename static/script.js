@@ -1,19 +1,19 @@
-path_list = new URL(window.location.href).pathname.split('/');
-messages_interval = 500;
-channels_interval = 500;
-window_width_cutoff = 1000;
+PATH_LIST = new URL(window.location.href).pathname.split('/');
+MESSAGES_INTERVAL = 500;
+CHANNELS_INTERVAL = 500;
+WINDOW_WIDTH_CUTOFF = 1000;
 
 
 function show_page(page) {
-    console.log(console.log('show'.concat(' ', page)));
+    //console.log(console.log('show'.concat(' ', page)));
     document.getElementById(page).style.display = "";
 }
 function hide_page(page) {
-    console.log(console.log('hide'.concat(' ', page)));
+    //console.log(console.log('hide'.concat(' ', page)));
     document.getElementById(page).style.display = "none";
 }
 function expand_page(page) {
-    document.getElementById(page).style.width = "calc(100vw)";
+    document.getElementById(page).style.width = "100vw";
 }
 
 
@@ -100,7 +100,6 @@ document.querySelector("#logout_button").addEventListener('click', (e) => {
 });
 
 
-
 // profile
 function updateProfile() {
     fetch('/api/profile', {
@@ -157,8 +156,8 @@ function getChannelsList() {
 }
 function displayChannelsList(channels) {
     var channelId = null;
-    if (path_list[1] == 'channel') {
-        channelId = path_list[2];
+    if (PATH_LIST[1] == 'channel') {
+        channelId = PATH_LIST[2];
     }
     const messagesContainer = document.querySelector('.channelsList');
     messagesContainer.innerHTML = '';
@@ -189,7 +188,7 @@ function displayChannelsList(channels) {
 window.addEventListener('load', function() {
     if ((new URL(window.location.href).pathname.split('/')[1]).localeCompare('') == 0) {
         console.log(window.innerWidth);
-        if (window.innerWidth < window_width_cutoff){
+        if (window.innerWidth < WINDOW_WIDTH_CUTOFF){
             hide_page('login');
             hide_page('profile');
             show_page('channels_column');
@@ -209,21 +208,6 @@ window.addEventListener('load', function() {
         }
     }
 });
-
-function postEmoji(messageId, emojiCode) {
-    console.log('post reaction');
-    const data = {emoji_code: emojiCode}
-    fetch(`/api/post_emoji/${messageId}`, {
-        method: 'POST',
-        headers: {
-            'x-api-key': davidzhang_api_key,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(data)
-    })
-    .catch(error => console.error('Error:', error));
-}
-
 
 
 // channel selected, no thread selected
@@ -258,6 +242,14 @@ function getMessages() {
     })
     .catch(error => console.error('Error:', error));
 }
+function isImage(url) {
+    const img = new Image();
+    img.src = url;
+    return new Promise((resolve) => {
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+    });
+}
 function displayMessages(messages, section) {
     const messagesContainer = document.querySelector(`.${section}`);
     messagesContainer.innerHTML = '';
@@ -270,26 +262,57 @@ function displayMessages(messages, section) {
     } else {
         messages.forEach(message => {
             const messageElement = document.createElement('message');
-            if (section != 'reply_message') {
-                messageElement.innerHTML = `
-                    <div class="user">${message.user_name}</div>
-                    <div class="body" id="textArea_${message.id}">${message.body}</div>
-                    <br>
-                    <div id="imagesArea_${message.id}_${section}"></div>
-                    <div id="emoji_box_${message.id}_${section}" class="emoji-picker">
-                        <button id="emoji-${message.id}-1_${section}" class="emoji">&#x1F600; ${message.e1} <a id="${message.id}-1_${section}">${message.reacters1}</a></span>
-                        <button id="emoji-${message.id}-2_${section}" class="emoji">&#x1F601; ${message.e2} <a id="${message.id}-2_${section}">${message.reacters2}</a></span>
-                        <button id="emoji-${message.id}-3_${section}" class="emoji">&#x1F602; ${message.e3} <a id="${message.id}-3_${section}">${message.reacters3}</a></span>
-                    </div>
-                    <br>`;
-            } else {
-                messageElement.innerHTML = `
-                    <div class="user">${message.user_name}</div>
-                    <div class="body" id="textArea_${message.id}">${message.body}</div>
-                    <br><br>`;
-            }
+            messageElement.innerHTML = `
+                <div class="user">${message.user_name}</div>
+                <div class="body" id="textArea_${message.id}">${message.body}</div>
+                <br>
+                <div id="imagesArea_${message.id}_${section}"></div>
+                <div id="emoji_box_${message.id}_${section}" class="emoji-picker">
+                    <button id="emoji-${message.id}-1_${section}" class="emoji">&#x1F600; ${message.e1} <a id="${message.id}-1_${section}">${message.reacters1}</a></span>
+                    <button id="emoji-${message.id}-2_${section}" class="emoji">&#x1F601; ${message.e2} <a id="${message.id}-2_${section}">${message.reacters2}</a></span>
+                    <button id="emoji-${message.id}-3_${section}" class="emoji">&#x1F602; ${message.e3} <a id="${message.id}-3_${section}">${message.reacters3}</a></span>
+                </div>
+                <br>`;
             messagesContainer.appendChild(messageElement);
             
+            const imagesContainer = document.getElementById(`imagesArea_${message.id}_${section}`);
+            const urls = message.body.split(/\s+/).filter(text => text.startsWith('http'));
+            urls.forEach(url => {
+                isImage(url).then(urlIsImage => {
+                    if (urlIsImage) {
+                        const img = document.createElement('img');
+                        img.src = url;
+                        img.style.maxWidth = '150px';
+                        img.style.margin = '10px';
+                        imagesContainer.appendChild(img);
+                    } else {
+                        console.log('image error');
+                    }
+                });
+            });
+
+            document.querySelector(`#emoji-${message.id}-1_${section}`).addEventListener('click', (e) => {
+                postEmoji(message.id, '&#x1F600;');
+            });
+            document.querySelector(`#emoji-${message.id}-2_${section}`).addEventListener('click', (e) => {
+                postEmoji(message.id, '&#x1F601;');
+            });
+            document.querySelector(`#emoji-${message.id}-3_${section}`).addEventListener('click', (e) => {
+                postEmoji(message.id, '&#x1F602;');
+            });
+            hide_page(`${message.id}-1_${section}`);
+            document.querySelector(`#emoji-${message.id}-1_${section}`).addEventListener('mouseover', (e) => {
+                show_page(`${message.id}-1_${section}`);
+            });
+            hide_page(`${message.id}-2_${section}`);
+            document.querySelector(`#emoji-${message.id}-2_${section}`).addEventListener('mouseover', (e) => {
+                show_page(`${message.id}-2_${section}`);
+            });
+            hide_page(`${message.id}-3_${section}`);
+            document.querySelector(`#emoji-${message.id}-3_${section}`).addEventListener('mouseover', (e) => {
+                show_page(`${message.id}-3_${section}`);
+            });
+
             if (section != 'reply_message') {
                 const reply = document.createElement('replies');
                 if (message.replies > 0) {
@@ -298,37 +321,6 @@ function displayMessages(messages, section) {
                     reply.innerHTML = `<span class="reply"><a href="/channel/${message.channel_id}/thread/${message.id}">Reply</a></span><br><br>`;
                 }
                 messageElement.appendChild(reply);
-                const imagesContainer = document.getElementById(`imagesArea_${message.id}_${section}`);
-                const urls = message.body.split(/\s+/).filter(text => text.startsWith('http'));
-                urls.forEach(url => {
-                    const img = document.createElement('img');
-                    img.src = url;
-                    img.style.maxWidth = '150px'; // Set max width to keep images small
-                    img.style.margin = '5px'; // Add some space between images
-                    imagesContainer.appendChild(img);
-                });
-
-                document.querySelector(`#emoji-${message.id}-1_${section}`).addEventListener('click', (e) => {
-                    postEmoji(message.id, '&#x1F600;');
-                });
-                document.querySelector(`#emoji-${message.id}-2_${section}`).addEventListener('click', (e) => {
-                    postEmoji(message.id, '&#x1F601;');
-                });
-                document.querySelector(`#emoji-${message.id}-3_${section}`).addEventListener('click', (e) => {
-                    postEmoji(message.id, '&#x1F602;');
-                });
-                hide_page(`${message.id}-1_${section}`);
-                document.querySelector(`#emoji-${message.id}-1_${section}`).addEventListener('mouseover', (e) => {
-                    show_page(`${message.id}-1_${section}`);
-                });
-                hide_page(`${message.id}-2_${section}`);
-                document.querySelector(`#emoji-${message.id}-2_${section}`).addEventListener('mouseover', (e) => {
-                    show_page(`${message.id}-2_${section}`);
-                });
-                hide_page(`${message.id}-3_${section}`);
-                document.querySelector(`#emoji-${message.id}-3_${section}`).addEventListener('mouseover', (e) => {
-                    show_page(`${message.id}-3_${section}`);
-                });
             }
         })
     }
@@ -336,7 +328,7 @@ function displayMessages(messages, section) {
 window.addEventListener('load', function() {
     if ((new URL(window.location.href).pathname.split('/')[1]).localeCompare('channel') == 0) {
         console.log(window.innerWidth);
-        if (window.innerWidth < window_width_cutoff){
+        if (window.innerWidth < WINDOW_WIDTH_CUTOFF){
             hide_page('login');
             hide_page('profile');
             hide_page('channels_column');
@@ -362,10 +354,10 @@ window.addEventListener('load', function() {
 });
 
 if ((new URL(window.location.href).pathname.split('/')[1]).localeCompare('channel') == 0) {
-    setInterval(getMessages, messages_interval);
+    setInterval(getMessages, MESSAGES_INTERVAL);
 }
 if ((new URL(window.location.href).pathname.split('/')[1]).localeCompare('channel') == 0) {
-    setInterval(getChannelsList, channels_interval);
+    setInterval(getChannelsList, CHANNELS_INTERVAL);
 }
 
 function postNewMessage() {
@@ -393,6 +385,20 @@ function postNewMessage() {
 document.querySelector("#post_button").addEventListener('click', function() {
     postNewMessage();
 });
+
+function postEmoji(messageId, emojiCode) {
+    console.log('post reaction');
+    const data = {emoji_code: emojiCode}
+    fetch(`/api/post_emoji/${messageId}`, {
+        method: 'POST',
+        headers: {
+            'x-api-key': davidzhang_api_key,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    })
+    .catch(error => console.error('Error:', error));
+}
 
 
 // thread selected
@@ -444,9 +450,9 @@ function displayReplies(replies) {
     }
 }
 window.addEventListener('load', function() {
-    if ((path_list[path_list.length-2]).localeCompare('thread') == 0) {
+    if ((PATH_LIST[PATH_LIST.length-2]).localeCompare('thread') == 0) {
         console.log(window.innerWidth);
-        if (window.innerWidth < window_width_cutoff){
+        if (window.innerWidth < WINDOW_WIDTH_CUTOFF){
             hide_page('login');
             hide_page('profile');
             hide_page('channels_column');
@@ -469,8 +475,8 @@ window.addEventListener('load', function() {
     }
 });
 
-if ((path_list[path_list.length-2]).localeCompare('thread') == 0) {
-    setInterval(getReplies, messages_interval);
+if ((PATH_LIST[PATH_LIST.length-2]).localeCompare('thread') == 0) {
+    setInterval(getReplies, MESSAGES_INTERVAL);
 }
 
 function postNewReply() {
@@ -500,6 +506,6 @@ document.querySelector("#reply_button").addEventListener('click', function() {
 });
 document.querySelector('.to_messages').addEventListener('click', (e) => {
     e.preventDefault();
-    const channelId = path_list[2];
+    const channelId = PATH_LIST[2];
     window.location.href = `/channel/${channelId}`;
 });
