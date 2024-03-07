@@ -208,6 +208,7 @@ window.addEventListener('load', function() {
         }
     }
 });
+setInterval(getChannelsList, CHANNELS_INTERVAL);
 
 
 // channel selected, no thread selected
@@ -275,6 +276,7 @@ function displayMessages(messages, section) {
                 <br>`;
             messagesContainer.appendChild(messageElement);
             
+            // Add images
             const imagesContainer = document.getElementById(`imagesArea_${message.id}_${section}`);
             const urls = message.body.split(/\s+/).filter(text => text.startsWith('http'));
             urls.forEach(url => {
@@ -291,6 +293,7 @@ function displayMessages(messages, section) {
                 });
             });
 
+            // Add emoji buttons
             document.querySelector(`#emoji-${message.id}-1_${section}`).addEventListener('click', (e) => {
                 postEmoji(message.id, '&#x1F600;');
             });
@@ -313,6 +316,7 @@ function displayMessages(messages, section) {
                 show_page(`${message.id}-3_${section}`);
             });
 
+            // Add reply button
             if (section != 'reply_message') {
                 const reply = document.createElement('replies');
                 if (message.replies > 0) {
@@ -355,9 +359,6 @@ window.addEventListener('load', function() {
 
 if ((new URL(window.location.href).pathname.split('/')[1]).localeCompare('channel') == 0) {
     setInterval(getMessages, MESSAGES_INTERVAL);
-}
-if ((new URL(window.location.href).pathname.split('/')[1]).localeCompare('channel') == 0) {
-    setInterval(getChannelsList, CHANNELS_INTERVAL);
 }
 
 function postNewMessage() {

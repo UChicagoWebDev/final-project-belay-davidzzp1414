@@ -1,3 +1,6 @@
+# This project relied on free resources from the internet for implemententing the functionalities
+# of displaying images and emojis
+
 import string
 import random
 from datetime import datetime

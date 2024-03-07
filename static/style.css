@@ -10,10 +10,10 @@ body {
   }
   
   .channel {
-    color: gray;
+    color: rgb(115, 115, 115);
   }
   .channel:hover {
-    color: white;
+    color: rgb(179, 178, 177);
   }
 
   .channels_column {
