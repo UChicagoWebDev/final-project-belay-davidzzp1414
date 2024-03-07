@@ -123,12 +123,8 @@ def verify_api(request):
         if key == db_key:
             return True
         else:
-            #print(user['id'])
-            print('API authentication failed')
             return jsonify({"error": "unauthorized API key"}), 406
     except:
-        #print(user['id'])
-        print('API authentication failed')
         return jsonify({"error": "unauthorized API key"}), 406
 
 def get_unread_num(channel, user):
