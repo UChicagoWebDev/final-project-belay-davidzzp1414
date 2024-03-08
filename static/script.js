@@ -187,7 +187,8 @@ function displayChannelsList(channels) {
 }
 window.addEventListener('load', function() {
     if ((new URL(window.location.href).pathname.split('/')[1]).localeCompare('') == 0) {
-        console.log(window.innerWidth);
+        //console.log(window.innerWidth);
+        hide_page('channel_error');
         if (window.innerWidth < WINDOW_WIDTH_CUTOFF){
             hide_page('login');
             hide_page('profile');
@@ -208,7 +209,37 @@ window.addEventListener('load', function() {
         }
     }
 });
-setInterval(getChannelsList, CHANNELS_INTERVAL);
+if ((new URL(window.location.href).pathname.split('/')[1]).localeCompare('') == 0) {
+    setInterval(getChannelsList, CHANNELS_INTERVAL);
+}
+
+function addChannel() {
+    const name = document.getElementById('channel_name').value;
+    const messageData = {channel_name: name};
+    fetch (`/api/add_channel`, {
+        method: 'POST',
+        headers: {
+            'x-api-key': davidzhang_api_key,
+            "Content-Type": "application/json"
+          },
+        body: JSON.stringify(messageData)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (typeof result === 'string' || result instanceof String) {
+            show_page('channel_error');
+        } else {
+            document.getElementById('channel_name').value = '';
+        }
+    })
+    .catch(error => {
+      console.error('Error adding channel:', error);
+    });
+}
+document.querySelector('#add_channel').addEventListener('click', function() {
+    hide_page('channel_error');
+    addChannel();
+})
 
 
 // channel selected, no thread selected
@@ -331,7 +362,8 @@ function displayMessages(messages, section) {
 }
 window.addEventListener('load', function() {
     if ((new URL(window.location.href).pathname.split('/')[1]).localeCompare('channel') == 0) {
-        console.log(window.innerWidth);
+        //console.log(window.innerWidth);
+        hide_page('channel_error');
         if (window.innerWidth < WINDOW_WIDTH_CUTOFF){
             hide_page('login');
             hide_page('profile');
@@ -362,7 +394,7 @@ if ((new URL(window.location.href).pathname.split('/')[1]).localeCompare('channe
 }
 
 function postNewMessage() {
-    console.log('post msg');
+    //console.log('post msg');
     const channelId = new URL(window.location.href).pathname.split('/')[2];
     const msg = document.getElementById(`message_content`).value;
     const messageData = {channel_id: channelId, message: msg};
@@ -404,7 +436,6 @@ function postEmoji(messageId, emojiCode) {
 
 // thread selected
 function getReplies() {
-    //console.log('getReplies');
     const channelId = new URL(window.location.href).pathname.split('/')[2];
     const threadId = new URL(window.location.href).pathname.split('/')[4];
     fetch(`/api/get_message/${threadId}`, {
@@ -452,7 +483,8 @@ function displayReplies(replies) {
 }
 window.addEventListener('load', function() {
     if ((PATH_LIST[PATH_LIST.length-2]).localeCompare('thread') == 0) {
-        console.log(window.innerWidth);
+        hide_page('channel_error');
+        //console.log(window.innerWidth);
         if (window.innerWidth < WINDOW_WIDTH_CUTOFF){
             hide_page('login');
             hide_page('profile');
@@ -477,6 +509,7 @@ window.addEventListener('load', function() {
 });
 
 if ((PATH_LIST[PATH_LIST.length-2]).localeCompare('thread') == 0) {
+    setInterval(getChannelsList, CHANNELS_INTERVAL);
     setInterval(getReplies, MESSAGES_INTERVAL);
 }
 

@@ -171,6 +171,23 @@ where id = ?
     else:
         return jsonify('# '+result['name'])
 
+@app.route('/api/add_channel', methods=['POST'])
+def add_channel():
+    if verify_api(request) is not True:
+        return verify_api(request)
+
+    name = request.json.get('channel_name')
+    channel_exists = query_db('''
+select * from channels where name = ?
+                              ''', [name], one=True)
+    if channel_exists:
+        return jsonify('Channel already exists')
+    else:
+        query_db('''
+insert into channels (name) values (?)
+                 ''', [name])
+        return jsonify({'success': True})
+
 def get_reply_count(msg):
     replies = query_db('''
 select distinct(id) from messages where reply_to = ?
