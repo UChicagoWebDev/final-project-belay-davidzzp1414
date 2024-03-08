@@ -52,9 +52,15 @@ function signup() {
     })
     .then(response => response.json())
     .then(result => {
-        if (result == 'Invalid username') {
+        if (result == 'Username already exists') {
             const messagesContainer = document.querySelector('.login_error_message');
-            messagesContainer.innerHTML = 'User name already exists, please create another one!'
+            messagesContainer.innerHTML = 'User name already exists, please create another one!';
+        } else if (result == 'Empty username') {
+            const messagesContainer = document.querySelector('.login_error_message');
+            messagesContainer.innerHTML = 'Username cannot be empty!';
+        } else if (result == 'Empty password') {
+            const messagesContainer = document.querySelector('.login_error_message');
+            messagesContainer.innerHTML = 'Password cannot be empty!';
         } else {
             window.location.href = result.redirectUrl;
         }
@@ -115,7 +121,13 @@ function updateProfile() {
     .then(result => {
         if (result == 'Username already exists') {
             const messagesContainer = document.querySelector('.profile_update_error');
-            messagesContainer.innerHTML = 'User name already exists, please use another one!'
+            messagesContainer.innerHTML = 'User name already taken, please choose another one!';
+        } else if (result == 'Empty username') {
+            const messagesContainer = document.querySelector('.profile_update_error');
+            messagesContainer.innerHTML = 'Username cannot be empty!';
+        } else if (result == 'Empty password') {
+            const messagesContainer = document.querySelector('.profile_update_error');
+            messagesContainer.innerHTML = 'Password cannot be empty!';
         } else {
             window.location.href = result.redirectUrl;
         }
@@ -348,7 +360,7 @@ function displayMessages(messages, section) {
             });
 
             // Add reply button
-            if (section != 'reply_message') {
+            if (section == 'messages') {
                 const reply = document.createElement('replies');
                 if (message.replies > 0) {
                     reply.innerHTML = `<span class="reply"><a href="/channel/${message.channel_id}/thread/${message.id}">Reply (${message.replies})</a></span><br><br>`;
@@ -390,6 +402,7 @@ window.addEventListener('load', function() {
 });
 
 if ((new URL(window.location.href).pathname.split('/')[1]).localeCompare('channel') == 0) {
+    setInterval(getChannelsList, CHANNELS_INTERVAL);
     setInterval(getMessages, MESSAGES_INTERVAL);
 }
 

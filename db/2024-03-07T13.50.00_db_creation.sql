@@ -1,3 +1,4 @@
+-- SCHEMA
 create table users (
     id INTEGER PRIMARY KEY,
     name VARCHAR(40) UNIQUE,
@@ -41,6 +42,7 @@ create table emojis (
 );
 
 
+-- INITIAL VALUES
 -- initial users
 insert into users (name, password, api_key) values ('Bob', 'fewjii231', 'sample_api_key_Bob');
 insert into users (name, password, api_key) values ('Alice', '12enoeinef', 'sample_api_key_Alice');

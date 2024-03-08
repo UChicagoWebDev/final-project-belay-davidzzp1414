@@ -395,6 +395,10 @@ select id from users where name = ? and password = ?
 def signup():
     name = request.json.get('username')
     password = request.json.get('password')
+    if name == '':
+        return jsonify('Empty username')
+    if password == '':
+        return jsonify('Empty password')
     try:
         user = new_user(name, password)
         next_page = session.pop('next', None)
@@ -407,7 +411,7 @@ def signup():
         resp.set_cookie('davidzhang_user_password', str(user['password']))
         return resp
     except:
-        return jsonify('Invalid username')
+        return jsonify('Username already exists')
 
 @app.route('/api/profile', methods=['POST'])
 def update_profile():
@@ -418,6 +422,11 @@ def update_profile():
     user_id = user['id']
     new_name = request.headers.get('username')
     new_password = request.headers.get('password')
+    if new_name == '':
+        return jsonify('Empty username')
+    if new_password == '':
+        return jsonify('Empty password')
+    
     if not new_name:
         return jsonify({'error': 'No username provided'}), 400
     if query_db('select * from users where name = ?', [new_name], one=True) is not None:
